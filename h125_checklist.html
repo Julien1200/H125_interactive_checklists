@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>H125 Checklist — Romandy AI Studio</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --amber:   #c8a84b;
+      --amber-d: #8a6e2a;
+      --green:   #4caf50;
+      --orange:  #ff9800;
+      --red:     #ef5350;
+      --blue:    #42a5f5;
+      --bg0:     #090909;
+      --bg1:     #111111;
+      --bg2:     #1a1a1a;
+      --bg3:     #222222;
+      --line:    #2a2a2a;
+      --text:    #ddd5b8;
+      --muted:   #555;
+      --font:    'Courier New', 'Lucida Console', monospace;
+    }
+
+    body {
+      background: var(--bg0);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 13px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── HEADER ─────────────────────────────────────────────────── */
+    header {
+      background: var(--bg2);
+      border-bottom: 2px solid var(--amber);
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+
+    .logo-block { flex: 1; }
+    .logo { font-size: 17px; font-weight: bold; color: var(--amber); letter-spacing: 3px; }
+    .logo-sub { font-size: 10px; color: var(--muted); letter-spacing: 2px; margin-top: 1px; }
+
+    .aircraft-badge {
+      background: var(--bg1);
+      border: 1px solid var(--amber-d);
+      color: var(--amber);
+      padding: 4px 12px;
+      font-size: 14px;
+      font-weight: bold;
+      letter-spacing: 3px;
+      border-radius: 3px;
+    }
+
+    .conn-block { display: flex; align-items: center; gap: 8px; }
+    .conn-dot {
+      width: 9px; height: 9px; border-radius: 50%;
+      background: var(--red); box-shadow: 0 0 6px var(--red);
+      transition: all 0.4s;
+    }
+    .conn-dot.ok { background: var(--green); box-shadow: 0 0 8px var(--green); }
+    .conn-dot.mock { background: var(--orange); box-shadow: 0 0 8px var(--orange); }
+    .conn-label { font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+
+    /* ── TABS ───────────────────────────────────────────────────── */
+    .tabs {
+      display: flex;
+      background: var(--bg1);
+      border-bottom: 1px solid var(--line);
+      overflow-x: auto;
+      flex-shrink: 0;
+    }
+    .tabs::-webkit-scrollbar { height: 3px; }
+    .tabs::-webkit-scrollbar-thumb { background: var(--amber-d); }
+
+    .tab {
+      padding: 9px 18px;
+      cursor: pointer;
+      border-right: 1px solid var(--line);
+      white-space: nowrap;
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      color: var(--muted);
+      transition: all 0.2s;
+      position: relative;
+      user-select: none;
+    }
+    .tab:hover { color: var(--amber); background: var(--bg2); }
+    .tab.active {
+      color: var(--amber);
+      background: var(--bg2);
+      border-bottom: 2px solid var(--amber);
+    }
+    .tab.done { color: var(--green); }
+    .tab.done.active { color: var(--green); border-bottom-color: var(--green); }
+
+    .tab-count {
+      font-size: 9px;
+      margin-left: 6px;
+      opacity: 0.7;
+    }
+
+    /* ── MAIN ───────────────────────────────────────────────────── */
+    main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      max-width: 860px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* ── PHASE HEADER ───────────────────────────────────────────── */
+    .phase-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 6px;
+    }
+    .phase-title {
+      font-size: 15px;
+      color: var(--amber);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+    .phase-count { font-size: 11px; color: var(--muted); }
+
+    .progress-wrap {
+      height: 3px;
+      background: var(--bg3);
+      border-radius: 2px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--amber);
+      border-radius: 2px;
+      transition: width 0.4s ease;
+    }
+    .progress-fill.done { background: var(--green); }
+
+    /* ── GROUPS ─────────────────────────────────────────────────── */
+    .group { margin-bottom: 20px; }
+    .group-label {
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      padding-left: 6px;
+      border-left: 2px solid var(--bg3);
+    }
+
+    /* ── ITEMS ──────────────────────────────────────────────────── */
+    .item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border: 1px solid var(--line);
+      border-radius: 3px;
+      margin-bottom: 3px;
+      transition: all 0.2s;
+      min-height: 38px;
+    }
+
+    .item.manual { cursor: pointer; }
+    .item.manual:hover:not(.checked) { border-color: #444; background: rgba(255,255,255,0.02); }
+
+    .item.checked {
+      border-color: rgba(76,175,80,0.3);
+      background: rgba(76,175,80,0.04);
+    }
+    .item.warning {
+      border-color: rgba(255,152,0,0.4);
+      background: rgba(255,152,0,0.05);
+    }
+    .item.fault {
+      border-color: rgba(239,83,80,0.4);
+      background: rgba(239,83,80,0.05);
+    }
+
+    /* checkbox */
+    .cb {
+      width: 18px; height: 18px;
+      border: 1.5px solid var(--muted);
+      border-radius: 2px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      font-size: 11px;
+      transition: all 0.2s;
+      color: transparent;
+    }
+    .item.checked .cb { border-color: var(--green); color: var(--green); }
+    .item.warning .cb { border-color: var(--orange); color: var(--orange); }
+    .item.fault   .cb { border-color: var(--red);    color: var(--red);    }
+
+    /* label / action */
+    .item-label { flex: 1; color: #ccc; }
+    .item.checked .item-label { color: #555; text-decoration: line-through; }
+
+    .item-action {
+      font-weight: bold;
+      color: var(--text);
+      text-align: right;
+      min-width: 90px;
+      font-size: 12px;
+      letter-spacing: 1px;
+    }
+    .item.checked .item-action { color: var(--green); }
+    .item.warning .item-action { color: var(--orange); }
+    .item.fault   .item-action { color: var(--red); }
+
+    /* badges */
+    .badge {
+      font-size: 9px;
+      letter-spacing: 1px;
+      padding: 2px 5px;
+      border-radius: 2px;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .badge-auto   { background: #0d1f33; color: var(--blue); }
+    .badge-manual { background: #221e0d; color: var(--amber-d); }
+
+    /* live sim value */
+    .sim-val {
+      font-size: 10px;
+      color: #444;
+      min-width: 58px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .item.checked .sim-val { color: var(--green); opacity: 0.6; }
+    .item.warning .sim-val { color: var(--orange); }
+    .item.fault   .sim-val { color: var(--red); }
+
+    /* ── PHASE COMPLETE ─────────────────────────────────────────── */
+    .phase-done {
+      text-align: center;
+      padding: 30px;
+      display: none;
+    }
+    .phase-done.show { display: block; }
+    .phase-done-icon { font-size: 32px; margin-bottom: 8px; }
+    .phase-done-text { color: var(--green); letter-spacing: 3px; font-size: 14px; }
+    .phase-done-sub  { color: var(--muted); font-size: 11px; margin-top: 4px; }
+
+    /* ── FOOTER CONTROLS ─────────────────────────────────────────── */
+    footer {
+      background: var(--bg1);
+      border-top: 1px solid var(--line);
+      padding: 10px 20px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .btn {
+      padding: 7px 14px;
+      border: 1px solid var(--line);
+      background: var(--bg2);
+      color: var(--muted);
+      cursor: pointer;
+      font-family: var(--font);
+      font-size: 11px;
+      letter-spacing: 1px;
+      border-radius: 3px;
+      transition: all 0.2s;
+    }
+    .btn:hover { border-color: var(--amber); color: var(--amber); }
+    .btn.primary { border-color: var(--amber-d); color: var(--amber); }
+
+    .footer-spacer { flex: 1; }
+    .poll-info { font-size: 10px; color: #333; }
+
+    /* ── SIM OFFLINE BANNER ─────────────────────────────────────── */
+    .offline-banner {
+      background: #150f00;
+      border: 1px solid #3a2a00;
+      color: var(--orange);
+      padding: 6px 20px;
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-align: center;
+      display: none;
+      flex-shrink: 0;
+    }
+    .offline-banner.show { display: block; }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo-block">
+    <div class="logo">ROMANDY AI STUDIO</div>
+    <div class="logo-sub">INTERACTIVE CHECKLIST SYSTEM</div>
+  </div>
+  <div class="aircraft-badge">H125</div>
+  <div class="conn-block">
+    <div class="conn-dot" id="connDot"></div>
+    <div class="conn-label" id="connLabel">CONNECTING...</div>
+  </div>
+</header>
+
+<!-- OFFLINE BANNER -->
+<div class="offline-banner" id="offlineBanner">
+  ⚠ MSFS NOT DETECTED — AUTO items will not be checked automatically. MANUAL items are active.
+</div>
+
+<!-- TABS -->
+<nav class="tabs" id="tabs"></nav>
+
+<!-- MAIN CONTENT -->
+<main id="main"></main>
+
+<!-- FOOTER -->
+<footer>
+  <button class="btn primary" onclick="resetManual()">↺ Reset Manual</button>
+  <button class="btn" onclick="resetAll()">↺ Reset All</button>
+  <div class="footer-spacer"></div>
+  <div class="poll-info" id="pollInfo">—</div>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════════
+//  DÉFINITION DE LA CHECKLIST H125
+//  type: "auto"   → coché automatiquement selon les vars SimConnect
+//  type: "manual" → coché par le pilote au clic
+//
+//  condition(vars)  → retourne true si l'item est validé
+//  warning(vars)    → retourne true si état orange (attention)
+//  display(vars)    → string affichée dans la colonne "valeur live"
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const PHASES = [
+  {
+    id: "before_start",
+    title: "BEFORE STARTING",
+    groups: [
+      {
+        label: "ELECTRICAL",
+        items: [
+          {
+            id: "battery_on", label: "Battery", action: "ON", type: "auto",
+            condition: v => v.battery > 0,
+            display: v => v.battery !== null ? (v.battery > 0 ? "ON" : "OFF") : null,
+          },
+          {
+            id: "avionics_on", label: "Avionics", action: "ON", type: "auto",
+            condition: v => v.avionics > 0,
+            display: v => v.avionics !== null ? (v.avionics > 0 ? "ON" : "OFF") : null,
+          },
+          {
+            id: "beacon_on", label: "Anti-collision light", action: "ON", type: "auto",
+            condition: v => v.beacon > 0,
+            display: v => v.beacon !== null ? (v.beacon > 0 ? "ON" : "OFF") : null,
+          },
+        ]
+      },
+      {
+        label: "FUEL",
+        items: [
+          {
+            id: "fuel_check", label: "Fuel quantity", action: "CHECK", type: "auto",
+            condition: v => v.fuel_qty !== null && v.fuel_qty > 20,
+            warning: v => v.fuel_qty !== null && v.fuel_qty > 0 && v.fuel_qty <= 20,
+            display: v => v.fuel_qty !== null ? `${v.fuel_qty.toFixed(0)} gal` : null,
+          },
+          { id: "fuel_valve", label: "Fuel valve", action: "OPEN", type: "manual" },
+        ]
+      },
+      {
+        label: "CONFIGURATION",
+        items: [
+          {
+            id: "rotor_brake_set", label: "Rotor brake", action: "SET", type: "auto",
+            condition: v => v.rotor_brake !== null && v.rotor_brake > 0.5,
+            display: v => v.rotor_brake !== null ? `${(v.rotor_brake * 100).toFixed(0)}%` : null,
+          },
+          { id: "collective_down", label: "Collective",       action: "FULL DOWN",   type: "manual" },
+          { id: "throttle_idle",  label: "Throttle",          action: "IDLE",      type: "manual" },
+          { id: "controls_free",  label: "Flight controls",   action: "FREE",       type: "manual" },
+        ]
+      },
+      {
+        label: "SAFETY",
+        items: [
+          { id: "doors_closed", label: "Doors",             action: "CLOSED",    type: "manual" },
+          { id: "belts",        label: "Seatbelts",         action: "FASTENED",  type: "manual" },
+          { id: "area_clear1",  label: "Area",              action: "CLEAR",    type: "manual" },
+        ]
+      },
+    ]
+  },
+
+  {
+    id: "engine_start",
+    title: "ENGINE START",
+    groups: [
+      {
+        label: "PRE-START",
+        items: [
+          { id: "start_clearance", label: "Start clearance", action: "OBTAINED", type: "manual" },
+          { id: "area_clear2",     label: "Rotor area",       action: "CLEAR",  type: "manual" },
+        ]
+      },
+      {
+        label: "START SEQUENCE",
+        items: [
+          {
+            id: "eng_combustion", label: "Engine ignition", action: "CONFIRMED", type: "auto",
+            condition: v => v.eng_combustion > 0,
+            display: v => v.eng_combustion !== null ? (v.eng_combustion > 0 ? "FIRING" : "OFF") : null,
+          },
+          {
+            id: "oil_pressure", label: "Oil pressure", action: "GREEN", type: "auto",
+            condition: v => v.oil_pressure !== null && v.oil_pressure > 30,
+            warning: v => v.oil_pressure !== null && v.oil_pressure > 0 && v.oil_pressure <= 30,
+            display: v => v.oil_pressure !== null ? `${v.oil_pressure.toFixed(0)} psi` : null,
+          },
+          {
+            id: "n2_stable", label: "N2 / Nr stabilised", action: "≥ 95%", type: "auto",
+            condition: v => v.rotor_rpm_pct !== null && v.rotor_rpm_pct >= 95,
+            warning: v => v.rotor_rpm_pct !== null && v.rotor_rpm_pct > 0 && v.rotor_rpm_pct < 95,
+            display: v => v.rotor_rpm_pct !== null ? `${v.rotor_rpm_pct.toFixed(0)}%` : null,
+          },
+          {
+            id: "rotor_brake_rel", label: "Rotor brake", action: "RELEASED", type: "auto",
+            condition: v => v.rotor_brake !== null && v.rotor_brake < 0.05,
+            display: v => v.rotor_brake !== null ? `${(v.rotor_brake * 100).toFixed(0)}%` : null,
+          },
+        ]
+      },
+      {
+        label: "POST-START CHECKS",
+        items: [
+          {
+            id: "engine_params", label: "Engine params (N1/N2/TQ/TOT)", action: "NORMAL", type: "auto",
+            condition: v => v.eng_combustion > 0 && v.oil_pressure > 30 && v.rotor_rpm_pct >= 95,
+            display: v => {
+              if (v.eng_n1 === null) return null;
+              return `N1:${v.eng_n1.toFixed(0)}% TQ:${(v.eng_torque||0).toFixed(0)}`;
+            },
+          },
+          { id: "vemd_check",  label: "VEMD / instruments", action: "CHECKED", type: "manual" },
+          { id: "fadec_check", label: "FADEC",              action: "ARM",      type: "manual" },
+        ]
+      },
+    ]
+  },
+
+  {
+    id: "before_takeoff",
+    title: "BEFORE TAKEOFF",
+    groups: [
+      {
+        label: "NAVIGATION / COMMS",
+        items: [
+          {
+            id: "transponder_alt", label: "Transponder", action: "ALT", type: "auto",
+            condition: v => v.transponder !== null && v.transponder >= 3,
+            display: v => {
+              const labels = { 0:"OFF", 1:"STBY", 2:"ON", 3:"ALT", 4:"TEST" };
+              return v.transponder !== null ? (labels[Math.round(v.transponder)] || `${v.transponder}`) : null;
+            },
+          },
+          {
+            id: "nav_lights_on", label: "Navigation lights", action: "ON", type: "auto",
+            condition: v => v.nav_lights > 0,
+            display: v => v.nav_lights !== null ? (v.nav_lights > 0 ? "ON" : "OFF") : null,
+          },
+          { id: "comm_freq",    label: "Radio frequencies",  action: "SET",   type: "manual" },
+          { id: "altimeter",    label: "Altimeter (QNH)",    action: "SET",      type: "manual" },
+        ]
+      },
+      {
+        label: "FINAL CHECKS",
+        items: [
+          { id: "controls_check", label: "Flight controls", action: "CHECKED",  type: "manual" },
+          { id: "instruments",    label: "Instruments",     action: "CHECKED",  type: "manual" },
+          {
+            id: "hydraulics_pre", label: "Hydraulics", action: "NORMAL", type: "auto",
+            condition: v => v.hydraulic !== null && v.hydraulic > 400,
+            warning: v => v.hydraulic !== null && v.hydraulic > 0 && v.hydraulic <= 400,
+            display: v => v.hydraulic !== null ? `${v.hydraulic.toFixed(0)} psi` : null,
+          },
+          { id: "doors_locked",  label: "Doors",   action: "LOCKED", type: "manual" },
+          { id: "area_clear3",   label: "Area",    action: "CLEAR",      type: "manual" },
+        ]
+      },
+    ]
+  },
+
+  {
+    id: "hover_check",
+    title: "HOVER CHECK",
+    groups: [
+      {
+        label: "HOVER CHECKS",
+        items: [
+          {
+            id: "hov_hydraulics", label: "Hydraulics", action: "NORMAL", type: "auto",
+            condition: v => v.hydraulic !== null && v.hydraulic > 400,
+            warning: v => v.hydraulic !== null && v.hydraulic > 0 && v.hydraulic <= 400,
+            display: v => v.hydraulic !== null ? `${v.hydraulic.toFixed(0)} psi` : null,
+          },
+          {
+            id: "hov_nr", label: "Nr", action: "100%", type: "auto",
+            condition: v => v.rotor_rpm_pct !== null && v.rotor_rpm_pct >= 98 && v.rotor_rpm_pct <= 102,
+            warning: v => v.rotor_rpm_pct !== null && (v.rotor_rpm_pct < 97 || v.rotor_rpm_pct > 103),
+            display: v => v.rotor_rpm_pct !== null ? `${v.rotor_rpm_pct.toFixed(1)}%` : null,
+          },
+          { id: "hov_controls",    label: "Flight controls",     action: "RESPONDING",  type: "manual" },
+          { id: "hov_instruments", label: "Instruments",         action: "NORMAL",     type: "manual" },
+          { id: "hov_vibrations",  label: "Vibrations",          action: "NORMAL",    type: "manual" },
+          { id: "hov_clearance",   label: "ATC clearances",      action: "RECEIVED",      type: "manual" },
+        ]
+      },
+    ]
+  },
+
+  {
+    id: "shutdown",
+    title: "SHUTDOWN",
+    groups: [
+      {
+        label: "PRE-SHUTDOWN",
+        items: [
+          { id: "sd_parking",    label: "Position",       action: "PARKING",      type: "manual" },
+          { id: "sd_collective", label: "Collective",     action: "FULL DOWN",    type: "manual" },
+          { id: "sd_throttle",   label: "Throttle",          action: "IDLE",      type: "manual" },
+          { id: "sd_wait",       label: "Cool-down",      action: "2 MIN",        type: "manual" },
+        ]
+      },
+      {
+        label: "ENGINE OFF",
+        items: [
+          {
+            id: "sd_eng_off", label: "Engine", action: "OFF", type: "auto",
+            condition: v => v.eng_combustion !== null && v.eng_combustion === 0,
+            display: v => v.eng_combustion !== null ? (v.eng_combustion > 0 ? "RUNNING" : "OFF") : null,
+          },
+          {
+            id: "sd_rotor_brake", label: "Rotor brake", action: "SET", type: "auto",
+            condition: v => v.rotor_brake !== null && v.rotor_brake > 0.5,
+            display: v => v.rotor_brake !== null ? `${(v.rotor_brake * 100).toFixed(0)}%` : null,
+          },
+          {
+            id: "sd_avionics", label: "Avionics", action: "OFF", type: "auto",
+            condition: v => v.avionics !== null && v.avionics === 0,
+            display: v => v.avionics !== null ? (v.avionics > 0 ? "ON" : "OFF") : null,
+          },
+          {
+            id: "sd_battery", label: "Battery", action: "OFF", type: "auto",
+            condition: v => v.battery !== null && v.battery === 0,
+            display: v => v.battery !== null ? (v.battery > 0 ? "ON" : "OFF") : null,
+          },
+          { id: "sd_logbook", label: "Flight log", action: "COMPLETED", type: "manual" },
+        ]
+      },
+    ]
+  },
+];
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  ÉTAT
+// ═══════════════════════════════════════════════════════════════════════════════
+
+let currentPhase = 0;
+let manualChecked = {};       // { itemId: true/false }
+let simVars = {};
+let simConnected = false;
+let simMock = false;
+let simVersion = "unknown";
+let lastPoll = null;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  POLL SERVEUR
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function poll() {
+  try {
+    const resp = await fetch("http://localhost:5001/state", { signal: AbortSignal.timeout(1500) });
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    const data = await resp.json();
+    simVars      = data.vars || {};
+    simConnected = data.connected;
+    simMock      = data.mock;
+    simVersion   = data.msfs_version || "unknown";
+    lastPoll     = new Date();
+  } catch (e) {
+    simConnected = false;
+    simMock      = false;
+    simVars      = {};
+  }
+  updateUI();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  ÉVALUATION D'UN ITEM
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function evalItem(item) {
+  if (item.type === "manual") {
+    return { checked: !!manualChecked[item.id], warning: false, fault: false, val: null };
+  }
+  // auto
+  if (!simConnected && !simMock) {
+    return { checked: false, warning: false, fault: false, val: "—" };
+  }
+  const v = simVars;
+  let checked = false, warning = false, fault = false;
+  try { checked = item.condition ? !!item.condition(v) : false; } catch(e) {}
+  if (!checked) {
+    try { warning = item.warning ? !!item.warning(v) : false; } catch(e) {}
+  }
+  let val = null;
+  try { val = item.display ? item.display(v) : null; } catch(e) {}
+  return { checked, warning, fault, val };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  PROGRESSION
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function phaseProgress(phase) {
+  let total = 0, done = 0;
+  for (const g of phase.groups) {
+    for (const item of g.items) {
+      total++;
+      if (evalItem(item).checked) done++;
+    }
+  }
+  return { total, done };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  RENDU
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function renderTabs() {
+  const tabsEl = document.getElementById("tabs");
+  tabsEl.innerHTML = "";
+  PHASES.forEach((phase, i) => {
+    const { total, done } = phaseProgress(phase);
+    const isDone = done === total;
+    const tab = document.createElement("div");
+    tab.className = "tab" + (i === currentPhase ? " active" : "") + (isDone ? " done" : "");
+    tab.innerHTML = `${phase.title} <span class="tab-count">${done}/${total}</span>`;
+    tab.onclick = () => { currentPhase = i; updateUI(); };
+    tabsEl.appendChild(tab);
+  });
+}
+
+function renderPhase() {
+  const main   = document.getElementById("main");
+  const phase  = PHASES[currentPhase];
+  const { total, done } = phaseProgress(phase);
+  const pct    = total > 0 ? (done / total) * 100 : 0;
+  const isDone = done === total && total > 0;
+
+  let html = `
+    <div class="phase-header">
+      <div class="phase-title">${phase.title}</div>
+      <div class="phase-count">${done} / ${total}</div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-fill ${isDone ? 'done' : ''}" style="width:${pct.toFixed(1)}%"></div>
+    </div>
+  `;
+
+  for (const group of phase.groups) {
+    html += `<div class="group"><div class="group-label">${group.label}</div>`;
+    for (const item of group.items) {
+      const { checked, warning, fault, val } = evalItem(item);
+      let cls = "item";
+      if (item.type === "manual") cls += " manual";
+      if (checked)      cls += " checked";
+      else if (warning) cls += " warning";
+      else if (fault)   cls += " fault";
+
+      const cbIcon = checked ? "✓" : (warning ? "!" : "");
+      const badgeCls = item.type === "auto" ? "badge-auto" : "badge-manual";
+      const badgeLbl = item.type === "auto" ? "AUTO" : "MAN";
+      const valStr   = val !== null ? val : "";
+      const manClick = item.type === "manual"
+        ? `onclick="toggleManual('${item.id}')"`
+        : "";
+
+      html += `
+        <div class="${cls}" ${manClick}>
+          <div class="cb">${cbIcon}</div>
+          <div class="item-label">${item.label}</div>
+          <span class="badge ${badgeCls}">${badgeLbl}</span>
+          <div class="item-action">${item.action}</div>
+          <div class="sim-val">${valStr}</div>
+        </div>
+      `;
+    }
+    html += `</div>`;
+  }
+
+  // Phase terminée
+  if (isDone) {
+    html += `
+      <div class="phase-done show">
+        <div class="phase-done-icon">✅</div>
+        <div class="phase-done-text">PHASE COMPLETE</div>
+        <div class="phase-done-sub">Proceed to next phase →</div>
+      </div>
+    `;
+  }
+
+  main.innerHTML = html;
+}
+
+function updateUI() {
+  // Connexion
+  const dot   = document.getElementById("connDot");
+  const label = document.getElementById("connLabel");
+  const banner = document.getElementById("offlineBanner");
+
+  if (simMock) {
+    dot.className = "conn-dot mock";
+    label.textContent = "MOCK MODE";
+    banner.className = "offline-banner show";
+  } else if (simConnected) {
+    dot.className = "conn-dot ok";
+    const vl = simVersion === "2020" ? "MSFS 2020" : simVersion === "2024" ? "MSFS 2024" : "MSFS";
+        label.textContent = vl + " CONNECTED";
+    banner.className = "offline-banner";
+  } else {
+    dot.className = "conn-dot";
+    label.textContent = "SIM OFFLINE";
+    banner.className = "offline-banner show";
+  }
+
+  // Poll info
+  const pi = document.getElementById("pollInfo");
+  pi.textContent = lastPoll ? `↺ ${lastPoll.toLocaleTimeString('en-GB')}` : "—";
+
+  renderTabs();
+  renderPhase();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  ACTIONS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function toggleManual(id) {
+  manualChecked[id] = !manualChecked[id];
+  updateUI();
+}
+
+function resetManual() {
+  manualChecked = {};
+  updateUI();
+}
+
+function resetAll() {
+  manualChecked = {};
+  simVars = {};
+  currentPhase = 0;
+  updateUI();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════════════════════════
+
+updateUI();
+poll();
+setInterval(poll, 500);
+</script>
+</body>
+</html>
